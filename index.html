@@ -239,11 +239,9 @@ textarea {
     🎮 出戰角色
    </div>
 
-   <input id="characterName" placeholder="角色名稱，例如：xxx">
-
-   <input id="characterJob" placeholder="職業，例如：箭神">
-
-   <input id="characterLevel" placeholder="等級，例如：160">
+   <select id="characterSelect">
+   <option value="">讀取角色中...</option>
+   </select>
 
     <div class="section-title">🐉 選擇 Boss</div>
     <div class="boss-grid">
@@ -313,10 +311,17 @@ textarea {
 <script>
 const LIFF_ID = '2010480025-sABqYuvb';
 
+const GAS_API_URL =
+'https://script.google.com/macros/s/AKfycbwLiBKJhnhV8_fVcxIkoA99drrRW3q25mF75OzpLWUxjMYIAIQzHhyrSf6s6XHxU7Bd/exec';
+
 let userId = '';
 let displayName = '';
 
 let selectedBoss = '龍王';
+
+let selectedCharacter = null;
+let selectedCharacterData = null;
+
 let selectedDates = [];
 let selectedAvailableAfter = '19:00';
 let selectedRuns = '1';
@@ -398,7 +403,7 @@ async function main() {
       '準備讀取角色...';
 
     renderCalendar();
-    updateStatus();
+    loadCharacters();
 
   } catch (error) {
     status.innerText =
@@ -591,7 +596,77 @@ function formatDate(year, month, day) {
   return `${year}-${mm}-${dd}`;
 }
 
+function loadCharacters() {
+
+  const select =
+    document.getElementById('characterSelect');
+
+  select.innerHTML =
+    '<option value="">讀取角色中...</option>';
+
+  const callbackName =
+    'handleCharacters_' + Date.now();
+
+  window[callbackName] = function(data) {
+
+    select.innerHTML = '';
+
+    if (
+      !data ||
+      !data.characters ||
+      data.characters.length === 0
+    ) {
+
+      select.innerHTML =
+        '<option value="">查無角色</option>';
+
+      return;
+    }
+
+    data.characters.forEach((c,index)=>{
+
+      const option =
+        document.createElement('option');
+
+      option.value = index;
+
+      option.text =
+        `${c.name}（${c.job}${c.level}）`;
+
+      select.appendChild(option);
+
+    });
+
+    selectedCharacterData =
+      data.characters[0];
+
+    select.onchange = function(){
+
+      selectedCharacterData =
+        data.characters[
+          Number(this.value)
+        ];
+
+      updateStatus();
+    };
+
+    updateStatus();
+
+    delete window[callbackName];
+  };
+
+  const script =
+    document.createElement('script');
+
+  script.src =
+    GAS_API_URL +
+    '?action=getCharacters' +
+    '&userId=' + encodeURIComponent(userId) +
+    '&callback=' + callbackName;
+
+  document.body.appendChild(script);
+}
+
 main();
-</script>
 </body>
 </html>
