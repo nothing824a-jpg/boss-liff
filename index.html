@@ -236,7 +236,7 @@ async function loadCharacters() {
     );
 
   }
-  catch(error) {
+   catch(error) {
 
     console.error(error);
 
@@ -251,7 +251,6 @@ async function loadCharacters() {
   }
 
 }
-
 function getSelectedCharacter() {
   const value = document.getElementById('characterSelect').value;
   if (!value) return null;
@@ -349,63 +348,97 @@ Boss：${selectedBoss}
 可連打：${selectedRuns} 場`
   );
 }
+  
+function showSuccessPage(count) {
+  document.body.innerHTML = `
+    <div class="container">
+      <div class="title-box">
+        <h2>✅ 提交完成</h2>
+        <div class="subtitle">你的 Boss 出席時間已送出</div>
+      </div>
 
+      <div class="card">
+        <div class="section-title">📨 已收到資料</div>
+        <div class="status">
+玩家：${displayName}
+提交筆數：${count} 筆
+
+可以關閉此頁面，
+回到 LINE 查看統計。
+        </div>
+
+        <button class="submit-btn" onclick="liff.closeWindow()">
+          返回 LINE
+        </button>
+      </div>
+    </div>
+  `;
+}
+  
 async function submitForm() {
   const c = getSelectedCharacter();
 
-  if (!userId) {
-    setStatus('❌ 尚未取得 LINE 使用者資料，請重新開啟表單');
-    return;
+  if (window.isSubmitting) return;
+  window.isSubmitting = true;
+
+  const btn = document.querySelector('.submit-btn');
+  btn.disabled = true;
+  btn.innerText = '送出中...';
+
+  try {
+    if (!userId) throw new Error('尚未取得 LINE 使用者資料，請重新開啟表單');
+    if (!c) throw new Error('請先選擇出戰角色');
+    if (selectedDates.length === 0) throw new Error('請至少選擇一天');
+
+    const note = document.getElementById('note').value;
+    const flagText = [];
+
+    if (flags.leader) flagText.push('可擔任隊長');
+    if (flags.sub) flagText.push('願意補位');
+    if (flags.dual) flagText.push('可雙開');
+    if (flags.flex) flagText.push('時間可彈性調整');
+
+    const fullNote =
+      (flagText.length ? '【特殊狀況】' + flagText.join('、') + '\n' : '') + note;
+
+    const attendanceList = selectedDates.map(date => ({
+      userId,
+      displayName,
+      characterName: c.name,
+      characterJob: c.job,
+      characterLevel: c.level,
+      boss: selectedBoss,
+      date,
+      startTime: selectedAvailableAfter,
+      endTime: '未填',
+      runs: selectedRuns,
+      note: fullNote
+    }));
+
+    setStatus('資料送出中...\n筆數：' + attendanceList.length);
+
+    fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'submitAttendance',
+        list: attendanceList
+      })
+    });
+
+    setTimeout(() => {
+      showSuccessPage(attendanceList.length);
+    }, 1000);
+
+  } catch (error) {
+    window.isSubmitting = false;
+
+    btn.disabled = false;
+    btn.innerText = '⚔️ 送出出席時間';
+
+    setStatus('❌ ' + error.message);
   }
-
-  if (!c) {
-    setStatus('❌ 請先選擇出戰角色');
-    return;
-  }
-
-  if (selectedDates.length === 0) {
-    setStatus('❌ 請至少選擇一天');
-    return;
-  }
-
-  const note = document.getElementById('note').value;
-  const flagText = [];
-
-  if (flags.leader) flagText.push('可擔任隊長');
-  if (flags.sub) flagText.push('願意補位');
-  if (flags.dual) flagText.push('可雙開');
-  if (flags.flex) flagText.push('時間可彈性調整');
-
-  const fullNote =
-    (flagText.length ? '【特殊狀況】' + flagText.join('、') + '\n' : '') + note;
-
-  const attendanceList = selectedDates.map(date => ({
-    userId,
-    displayName,
-    characterName: c.name,
-    characterJob: c.job,
-    characterLevel: c.level,
-    boss: selectedBoss,
-    date,
-    startTime: selectedAvailableAfter,
-    endTime: '未填',
-    runs: selectedRuns,
-    note: fullNote
-  }));
-
-  setStatus('資料送出中...\n筆數：' + attendanceList.length);
-
-  fetch(GAS_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({
-      action: 'submitAttendance',
-      list: attendanceList
-    })
-  });
-
-  setStatus('✅ 已送出出席時間\n可回到 LINE 查看統計。');
 }
 
 function formatDate(year,month,day) {
