@@ -179,80 +179,77 @@ async function loadCharacters() {
       'LINE ID：' + userId
     );
 
-    const url =
+    const data = await jsonp(
       GAS_URL +
       '?action=getCharacters' +
-      '&userId=' + encodeURIComponent(userId) +
-      '&callback=test';
-
-    setStatus(
-      '呼叫 GAS...\n\n' +
-      url
+      '&userId=' + encodeURIComponent(userId)
     );
 
-    const response = await fetch(url);
+    select.innerHTML = '';
 
-    const text = await response.text();
+    if (
+      !data ||
+      !data.ok ||
+      !data.characters ||
+      data.characters.length === 0
+    ) {
 
-    setStatus(
-      'GAS 回傳內容：\n\n' +
-      text
-    );
-
-    // ===== 如果成功取得角色 =====
-
-    if (text.includes('"characters"')) {
-
-      const jsonText = text
-        .replace(/^test\(/, '')
-        .replace(/\)$/, '');
-
-      const data = JSON.parse(jsonText);
-
-      select.innerHTML = '';
-
-      data.characters.forEach(c => {
-
-        const option = document.createElement('option');
-
-        option.value = JSON.stringify(c);
-
-        option.textContent =
-          `${c.name}（${c.job}${c.level}）`;
-
-        select.appendChild(option);
-      });
+      select.innerHTML =
+        '<option value="">查無角色，請先新增角色</option>';
 
       setStatus(
-        '角色載入成功\n' +
-        '共 ' + data.characters.length + ' 隻角色'
+        '查無角色資料\n' +
+        '請先在 LINE 使用 !新增角色'
       );
+
+      return;
     }
 
-  } catch(error) {
+    data.characters.forEach(c => {
+
+      const option =
+        document.createElement('option');
+
+      option.value =
+        JSON.stringify(c);
+
+      option.textContent =
+        `${c.name}（${c.job}${c.level}）`;
+
+      if (c.isDefault === '是') {
+        option.selected = true;
+      }
+
+      select.appendChild(option);
+
+    });
+
+    select.onchange = updateStatus;
+
+    updateStatus();
 
     setStatus(
-      '讀取角色失敗\n\n' +
-      error.message
+      '角色載入成功\n' +
+      '共 ' +
+      data.characters.length +
+      ' 隻角色'
     );
+
+  }
+  catch(error) {
 
     console.error(error);
 
+    select.innerHTML =
+      '<option value="">角色讀取失敗</option>';
+
+    setStatus(
+      '❌ 讀取角色失敗\n\n' +
+      error.message
+    );
+
   }
 
-}
-
-  data.characters.forEach(c => {
-    const option = document.createElement('option');
-    option.value = JSON.stringify(c);
-    option.textContent = `${c.name}（${c.job}${c.level}）`;
-
-    if (c.isDefault === '是') option.selected = true;
-
-    select.appendChild(option);
-  });
-
-  select.onchange = updateStatus;
 }
 
 function getSelectedCharacter() {
