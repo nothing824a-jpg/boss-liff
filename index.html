@@ -169,19 +169,78 @@ function jsonp(url) {
 }
 
 async function loadCharacters() {
+
   const select = document.getElementById('characterSelect');
-  select.innerHTML = '<option value="">讀取角色中...</option>';
 
-  const data = await jsonp(
-    GAS_URL + '?action=getCharacters&userId=' + encodeURIComponent(userId)
-  );
+  try {
 
-  select.innerHTML = '';
+    setStatus(
+      '開始讀取角色...\n' +
+      'LINE ID：' + userId
+    );
 
-  if (!data.ok || !data.characters || data.characters.length === 0) {
-    select.innerHTML = '<option value="">查無角色，請先輸入 !新增角色</option>';
-    return;
+    const url =
+      GAS_URL +
+      '?action=getCharacters' +
+      '&userId=' + encodeURIComponent(userId) +
+      '&callback=test';
+
+    setStatus(
+      '呼叫 GAS...\n\n' +
+      url
+    );
+
+    const response = await fetch(url);
+
+    const text = await response.text();
+
+    setStatus(
+      'GAS 回傳內容：\n\n' +
+      text
+    );
+
+    // ===== 如果成功取得角色 =====
+
+    if (text.includes('"characters"')) {
+
+      const jsonText = text
+        .replace(/^test\(/, '')
+        .replace(/\)$/, '');
+
+      const data = JSON.parse(jsonText);
+
+      select.innerHTML = '';
+
+      data.characters.forEach(c => {
+
+        const option = document.createElement('option');
+
+        option.value = JSON.stringify(c);
+
+        option.textContent =
+          `${c.name}（${c.job}${c.level}）`;
+
+        select.appendChild(option);
+      });
+
+      setStatus(
+        '角色載入成功\n' +
+        '共 ' + data.characters.length + ' 隻角色'
+      );
+    }
+
+  } catch(error) {
+
+    setStatus(
+      '讀取角色失敗\n\n' +
+      error.message
+    );
+
+    console.error(error);
+
   }
+
+}
 
   data.characters.forEach(c => {
     const option = document.createElement('option');
