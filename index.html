@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 16px;
+      font-family: "Courier New", "Noto Sans TC", monospace;
+      background: linear-gradient(180deg, #17213d 0%, #090d1b 100%);
+      color: #fff4c2;
+      font-size: 27px;
+    }
+
+    .container {
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .title-box,
+    .card {
+      border: 5px solid #f7d66d;
+      background: #202b49;
+      box-shadow: 0 8px 0 #070b16;
+      padding: 20px;
+      margin-bottom: 22px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 36px;
+      color: #ffe082;
+      text-align: center;
+      text-shadow: 3px 3px 0 #000;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      font-size: 22px;
+      color: #ccd5ff;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .section-title {
+      margin: 28px 0 14px;
+      font-size: 30px;
+      color: #ffe082;
+      font-weight: bold;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    .boss-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .boss-card,
+    .choice-btn,
+    .day,
+    .check-btn {
+      border: 4px solid #8fa3e8;
+      background: #101827;
+      color: #ffffff;
+      text-align: center;
+      font-weight: bold;
+      box-shadow: 0 5px 0 #050815;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .boss-card {
+      padding: 18px 8px;
+      font-size: 24px;
+      line-height: 1.35;
+    }
+
+    .choice-btn {
+      min-height: 74px;
+      padding: 16px 8px;
+      font-size: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .boss-card.active,
+    .choice-btn.active,
+    .day.active {
+      border-color: #ffe082;
+      background: #35a853;
+      color: #ffffff;
+      box-shadow: 0 5px 0 #14572a;
+    }
+
+    .calendar-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .month-title {
+      font-size: 30px;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .nav-btn {
+      border: 4px solid #f7d66d;
+      background: #3b6fd8;
+      color: white;
+      font-size: 28px;
+      padding: 10px 18px;
+      font-family: inherit;
+      box-shadow: 0 5px 0 #18336e;
+    }
+
+    .week-grid,
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+
+    .week {
+      color: #ffe082;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 6px 0;
+    }
+
+    .day {
+      min-height: 58px;
+      font-size: 24px;
+      padding: 12px 0;
+    }
+
+    .day.empty {
+      visibility: hidden;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .runs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .checkbox-row {
+      display: grid;
+      gap: 12px;
+    }
+
+    .check-btn {
+      padding: 20px;
+      font-size: 26px;
+      text-align: left;
+    }
+
+    .check-btn.active {
+      border-color: #ffe082;
+      background: #7b4bd9;
+      box-shadow: 0 5px 0 #3c2170;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 130px;
+      padding: 18px;
+      border: 4px solid #9fb0ee;
+      background: #101827;
+      color: #ffffff;
+      font-size: 25px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+    }
+
+    .submit-btn {
+      width: 100%;
+      min-height: 94px;
+      margin-top: 28px;
+      padding: 18px;
+      border: 5px solid #f7d66d;
+      background: #35a853;
+      color: white;
+      font-size: 31px;
+      font-weight: bold;
+      font-family: inherit;
+      box-shadow: 0 8px 0 #14572a;
+      cursor: pointer;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 18px;
+      border: 4px solid #9fb0ee;
+      background: #101827;
+      color: #ffffff;
+      font-size: 23px;
+      min-height: 80px;
+      white-space: pre-line;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="title-box">
+    <h2>⚔️ Boss 出席時間表</h2>
+    <div class="subtitle">選日期，再選「幾點後可以」</div>
+  </div>
+
+  <div class="card">
+
+   <div class="section-title">
+    🎮 出戰角色
+   </div>
+
+   <input id="characterName" placeholder="角色名稱，例如：xxx">
+
+   <input id="characterJob" placeholder="職業，例如：箭神">
+
+   <input id="characterLevel" placeholder="等級，例如：160">
+
+    <div class="section-title">🐉 選擇 Boss</div>
+    <div class="boss-grid">
+      <div class="boss-card active" onclick="selectBoss(this, '龍王')">🐉<br>龍王<br>12人</div>
+      <div class="boss-card" onclick="selectBoss(this, '困難拉圖斯')">⚙️<br>困難拉圖斯<br>6人</div>
+      <div class="boss-card" onclick="selectBoss(this, '炎魔')">🔥<br>炎魔<br>6人</div>
+      <div class="boss-card" onclick="selectBoss(this, '普通拉圖斯')">🕰️<br>普通拉圖斯<br>6人</div>
+    </div>
+
+    <div class="section-title">📅 選擇日期</div>
+    <div class="calendar-head">
+      <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+      <div id="monthTitle" class="month-title"></div>
+      <button class="nav-btn" onclick="changeMonth(1)">›</button>
+    </div>
+
+    <div class="week-grid">
+      <div class="week">日</div>
+      <div class="week">一</div>
+      <div class="week">二</div>
+      <div class="week">三</div>
+      <div class="week">四</div>
+      <div class="week">五</div>
+      <div class="week">六</div>
+    </div>
+    <div id="calendar" class="day-grid"></div>
+
+    <div class="section-title">⏰ 幾點後可以</div>
+    <div id="availableAfterGrid" class="choice-grid">
+    <div class="choice-btn active" onclick="selectAvailableAfter(this, '19:00')">19:00 後</div>
+    <div class="choice-btn" onclick="selectAvailableAfter(this, '20:00')">20:00 後</div>
+    <div class="choice-btn" onclick="selectAvailableAfter(this, '21:00')">21:00 後</div>
+    <div class="choice-btn" onclick="selectAvailableAfter(this, '22:00')">22:00 後</div>
+    <div class="choice-btn" onclick="selectAvailableAfter(this, '23:00')">23:00 後</div>
+    <div class="choice-btn" onclick="selectAvailableAfter(this, '24:00')">24:00 後</div>
+     </div>
+
+    <div class="section-title">🔥 可連打場數</div>
+    <div id="runsGrid" class="runs-grid">
+    <div class="choice-btn active" onclick="selectRuns(this, '1')">1場</div>
+    <div class="choice-btn" onclick="selectRuns(this, '2')">2場</div>
+    <div class="choice-btn" onclick="selectRuns(this, '3')">3場</div>
+    <div class="choice-btn" onclick="selectRuns(this, '4')">4場</div>
+    <div class="choice-btn" onclick="selectRuns(this, '5')">5場</div>
+    <div class="choice-btn" onclick="selectRuns(this, '6')">6場</div>
+    <div class="choice-btn" onclick="selectRuns(this, '7')">7場</div>
+     </div>
+
+    <div class="section-title">⭐ 特殊狀況</div>
+    <div class="checkbox-row">
+      <div class="check-btn" onclick="toggleFlag(this, 'leader')">👑 可擔任隊長</div>
+      <div class="check-btn" onclick="toggleFlag(this, 'sub')">🛡️ 願意補位</div>
+      <div class="check-btn" onclick="toggleFlag(this, 'dual')">👥 可雙開</div>
+      <div class="check-btn" onclick="toggleFlag(this, 'flex')">🔄 時間可彈性調整</div>
+    </div>
+
+    <div class="section-title">📝 備註</div>
+    <textarea id="note" placeholder="例如：只能前四場、23:00後需離開、可代開角色"></textarea>
+
+    <button class="submit-btn" onclick="submitForm()">⚔️ 送出出席時間</button>
+
+    <div id="status" class="status">系統讀取中...</div>
+
+  </div>
+</div>
+
+<script>
+const LIFF_ID = '2010480025-sABqYuvb';
+
+let userId = '';
+let displayName = '';
+
+let selectedBoss = '龍王';
+let selectedDates = [];
+let selectedAvailableAfter = '19:00';
+let selectedRuns = '1';
+
+let flags = {
+  leader: false,
+  sub: false,
+  dual: false,
+  flex: false
+};
+
+let currentDate = new Date();
+
+async function ensureLineProfile() {
+  try {
+    if (userId) return true;
+
+    await liff.init({ liffId: LIFF_ID });
+
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: window.location.href });
+      return false;
+    }
+
+    const profile = await liff.getProfile();
+
+console.log(profile);
+
+userId = profile.userId || '';
+displayName = profile.displayName || '未知玩家';
+
+    return !!userId;
+
+  } catch (error) {
+    document.getElementById('status').innerText =
+      '❌ 無法取得 LINE 使用者資料\n' + error.message;
+    return false;
+  }
+}
+
+async function main() {
+  const status = document.getElementById('status');
+
+  try {
+    status.innerText =
+      'main 已啟動\n' +
+      'LIFF ID：' + LIFF_ID + '\n' +
+      '準備初始化 LIFF...';
+
+    if (typeof liff === 'undefined') {
+      status.innerText = '❌ LIFF SDK 沒有載入成功';
+      return;
+    }
+
+    await Promise.race([
+      liff.init({ liffId: LIFF_ID }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('LIFF 初始化逾時，請檢查 LIFF ID / Endpoint URL / Channel 狀態')), 8000)
+      )
+    ]);
+
+    status.innerText = '✅ LIFF 初始化完成\n檢查登入狀態...';
+
+    if (!liff.isLoggedIn()) {
+      status.innerText = '尚未登入 LINE，準備跳轉登入...';
+      liff.login({ redirectUri: window.location.href });
+      return;
+    }
+
+    const profile = await liff.getProfile();
+
+    userId = profile.userId || '';
+    displayName = profile.displayName || '未知玩家';
+
+    status.innerText =
+      '✅ 取得 LINE 資料成功\n' +
+      '名稱：' + displayName + '\n' +
+      'LINE ID：' + userId + '\n' +
+      '準備讀取角色...';
+
+    renderCalendar();
+    updateStatus();
+
+  } catch (error) {
+    status.innerText =
+      '❌ main 發生錯誤\n\n' +
+      error.message + '\n\n' +
+      'LIFF ID：' + LIFF_ID + '\n' +
+      '目前網址：' + window.location.href;
+  }
+}
+
+function selectBoss(el, boss) {
+  selectedBoss = boss;
+  document.querySelectorAll('.boss-card').forEach(btn => btn.classList.remove('active'));
+  el.classList.add('active');
+  updateStatus();
+}
+
+function selectAvailableAfter(el, time) {
+  selectedAvailableAfter = time;
+  document.querySelectorAll('#availableAfterGrid .choice-btn').forEach(btn => btn.classList.remove('active'));
+  el.classList.add('active');
+  updateStatus();
+}
+
+function selectRuns(el, num) {
+  selectedRuns = num;
+  document.querySelectorAll('#runsGrid .choice-btn').forEach(btn => btn.classList.remove('active'));
+  el.classList.add('active');
+  updateStatus();
+}
+
+function renderCalendar() {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  document.getElementById('monthTitle').innerText =
+    `${year}年${month + 1}月`;
+
+  const calendar = document.getElementById('calendar');
+  calendar.innerHTML = '';
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const lastDate = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'day empty';
+    calendar.appendChild(empty);
+  }
+
+  for (let d = 1; d <= lastDate; d++) {
+    const dateStr = formatDate(year, month + 1, d);
+    const div = document.createElement('div');
+    div.className = 'day';
+    div.innerText = d;
+
+    if (selectedDates.includes(dateStr)) {
+      div.classList.add('active');
+    }
+
+    div.onclick = function() {
+      toggleDate(dateStr);
+    };
+
+    calendar.appendChild(div);
+  }
+}
+
+function toggleDate(dateStr) {
+  if (selectedDates.includes(dateStr)) {
+    selectedDates = selectedDates.filter(d => d !== dateStr);
+  } else {
+    selectedDates.push(dateStr);
+  }
+
+  renderCalendar();
+  updateStatus();
+}
+
+function changeMonth(offset) {
+  currentDate.setMonth(currentDate.getMonth() + offset);
+  renderCalendar();
+}
+
+function toggleFlag(el, key) {
+  flags[key] = !flags[key];
+  el.classList.toggle('active');
+  updateStatus();
+}
+
+function updateStatus() {
+  const characterName = document.getElementById('characterName').value || '尚未輸入';
+
+  document.getElementById('status').innerText =
+    `玩家：${displayName || '讀取中'}
+LINE ID：${userId || '讀取中'}
+角色：${characterName}
+Boss：${selectedBoss}
+已選日期：${selectedDates.length} 天
+時間：${selectedAvailableAfter} 後可出席
+可連打：${selectedRuns} 場`;
+}
+
+async function submitForm() {
+
+const hasProfile = await ensureLineProfile();
+
+if (!hasProfile) {
+  document.getElementById('status').innerText =
+    '❌ 尚未取得 LINE 使用者資料，請重新開啟表單';
+  return;
+}
+
+  if (!userId) {
+    document.getElementById('status').innerText =
+      '❌ 尚未取得 LINE 使用者資料，請重新開啟表單';
+    return;
+  }
+
+  const note = document.getElementById('note').value;
+
+  if (selectedDates.length === 0) {
+    document.getElementById('status').innerText = '❌ 請至少選擇一天。';
+    return;
+  }
+const characterName =
+  document.getElementById('characterName').value.trim();
+
+const characterJob =
+  document.getElementById('characterJob').value.trim();
+
+const characterLevel =
+  document.getElementById('characterLevel').value.trim();
+
+if (!characterName || !characterJob || !characterLevel) {
+  document.getElementById('status').innerText =
+    '❌ 請完整輸入角色名稱、職業、等級';
+  return;
+}
+
+  const flagText = [];
+
+  if (flags.leader) flagText.push('可擔任隊長');
+  if (flags.sub) flagText.push('願意補位');
+  if (flags.dual) flagText.push('可雙開');
+  if (flags.flex) flagText.push('時間可彈性調整');
+
+  const fullNote =
+    (flagText.length ? '【特殊狀況】' + flagText.join('、') + '\n' : '') + note;
+
+  const attendanceList = selectedDates.map(date => ({
+   userId,
+   displayName,
+   characterName: characterName,
+   characterJob: characterJob,
+   characterLevel: characterLevel,
+   boss: selectedBoss,
+   date,
+   startTime: selectedAvailableAfter,
+   endTime: '未填',
+   runs: selectedRuns,
+   note: fullNote
+  }));
+
+  document.getElementById('status').innerText =
+    '資料送出中...\n' +
+    '玩家：' + displayName + '\n' +
+    '筆數：' + attendanceList.length;
+
+  fetch('https://script.google.com/macros/s/AKfycbwLiBKJhnhV8_fVcxIkoA99drrRW3q25mF75OzpLWUxjMYIAIQzHhyrSf6s6XHxU7Bd/exec', {
+  method: 'POST',
+  mode: 'no-cors',
+  headers: {
+    'Content-Type': 'text/plain'
+  },
+  body: JSON.stringify({
+    action: 'submitAttendance',
+    list: attendanceList
+  })
+});
+
+document.getElementById('status').innerText =
+  '✅ 已送出出席時間\n可回到 LINE 查看統計。';
+
+}
+
+function formatDate(year, month, day) {
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${year}-${mm}-${dd}`;
+}
+
+main();
+</script>
+</body>
+</html>
