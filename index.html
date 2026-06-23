@@ -495,12 +495,16 @@ function toggleFlag(el, key) {
 }
 
 function updateStatus() {
-  const characterName = document.getElementById('characterName').value || '尚未輸入';
+
+  const characterText =
+    selectedCharacterData
+      ? `${selectedCharacterData.name}（${selectedCharacterData.job}${selectedCharacterData.level}）`
+      : '尚未選擇';
 
   document.getElementById('status').innerText =
-    `玩家：${displayName || '讀取中'}
+`玩家：${displayName || '讀取中'}
 LINE ID：${userId || '讀取中'}
-角色：${characterName}
+角色：${characterText}
 Boss：${selectedBoss}
 已選日期：${selectedDates.length} 天
 時間：${selectedAvailableAfter} 後可出席
@@ -529,14 +533,22 @@ if (!hasProfile) {
     document.getElementById('status').innerText = '❌ 請至少選擇一天。';
     return;
   }
+if (!selectedCharacterData) {
+
+  document.getElementById('status').innerText =
+    '❌ 請先選擇角色';
+
+  return;
+}
+
 const characterName =
-  document.getElementById('characterName').value.trim();
+  selectedCharacterData.name;
 
 const characterJob =
-  document.getElementById('characterJob').value.trim();
+  selectedCharacterData.job;
 
 const characterLevel =
-  document.getElementById('characterLevel').value.trim();
+  selectedCharacterData.level;
 
 if (!characterName || !characterJob || !characterLevel) {
   document.getElementById('status').innerText =
@@ -640,6 +652,8 @@ function loadCharacters() {
     selectedCharacterData =
       data.characters[0];
 
+    select.value = "0";
+    
     select.onchange = function(){
 
       selectedCharacterData =
@@ -658,13 +672,15 @@ function loadCharacters() {
   const script =
     document.createElement('script');
 
-  script.src =
-    GAS_API_URL +
-    '?action=getCharacters' +
-    '&userId=' + encodeURIComponent(userId) +
-    '&callback=' + callbackName;
+script.onerror = function() {
 
-  document.body.appendChild(script);
+  document.getElementById('status').innerText =
+    '❌ 角色 API 讀取失敗';
+
+};
+
+document.body.appendChild(script);
+
 }
 
 main();
