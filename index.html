@@ -252,6 +252,7 @@ async function loadCharacters() {
     );
 
   }
+  }
 async function loadMyAttendance() {
   const box = document.getElementById('myAttendanceBox');
 
@@ -290,7 +291,6 @@ async function loadMyAttendance() {
   } catch (error) {
     box.innerText = '❌ 出席資料讀取失敗\n' + error.message;
   }
-}
 }
 function getSelectedCharacter() {
   const value = document.getElementById('characterSelect').value;
