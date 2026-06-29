@@ -45,8 +45,8 @@ textarea{min-height:130px;resize:vertical}
   </div>
 
   <div class="card">
-    <div class="section-title">📌 我的出席資料</div>
-    <div id="myAttendanceBox" class="status">讀取出席資料中...</div>
+    <div class="section-title">📌 已填寫日期</div>
+    <div id="myAttendanceBox" class="status">讀取已填寫日期中...</div>
     <div class="section-title">🎮 出戰角色</div>
     <select id="characterSelect">
       <option value="">讀取角色中...</option>
@@ -257,7 +257,7 @@ async function loadMyAttendance() {
   const box = document.getElementById('myAttendanceBox');
 
   try {
-    box.innerText = '讀取出席資料中...';
+    box.innerText = '讀取已填寫日期中...';
 
     const data = await jsonp(
       GAS_URL +
@@ -266,32 +266,69 @@ async function loadMyAttendance() {
     );
 
     if (!data || !data.ok || !data.attendance || data.attendance.length === 0) {
-      box.innerText = '目前沒有出席資料';
+      box.innerText = '目前沒有已填寫日期';
       return;
     }
 
-    let text = '';
+    selectedDates = [];
 
-    data.attendance.forEach((r, index) => {
-      text += `${index + 1}. ${r.boss}\n`;
-      text += `📅 ${r.date}（${r.week}）\n`;
-      text += `⏰ ${r.time} 後\n`;
-      text += `🔥 ${r.runs}場\n`;
-      text += `👤 ${r.character}\n`;
+    const currentBossRows = data.attendance.filter(r => r.boss === selectedBoss);
 
-      if (r.note) {
-        text += `📝 ${r.note}\n`;
+    currentBossRows.forEach(r => {
+      const fullDate = normalizeDateFromShort(r.date);
+      if (fullDate && !selectedDates.includes(fullDate)) {
+        selectedDates.push(fullDate);
       }
-
-      text += `\n`;
     });
 
-    box.innerText = text.trim();
+    if (currentBossRows.length > 0) {
+      selectedAvailableAfter = currentBossRows[0].time || selectedAvailableAfter;
+      selectedRuns = String(currentBossRows[0].runs || selectedRuns);
+
+      updateActiveButton('#availableAfterGrid .choice-btn', selectedAvailableAfter);
+      updateActiveButton('#runsGrid .choice-btn', selectedRuns);
+    }
+
+    renderCalendar();
+
+    if (selectedDates.length === 0) {
+      box.innerText = `${selectedBoss} 目前沒有已填寫日期`;
+    } else {
+      box.innerText =
+        `${selectedBoss} 已填寫 ${selectedDates.length} 天\n` +
+        selectedDates.map(d => '📅 ' + d).join('\n') +
+        '\n\n重新點選日期後送出即可修正。';
+    }
 
   } catch (error) {
-    box.innerText = '❌ 出席資料讀取失敗\n' + error.message;
+    box.innerText = '❌ 已填寫日期讀取失敗\n' + error.message;
   }
 }
+function normalizeDateFromShort(shortDate) {
+  if (!shortDate) return '';
+
+  const now = new Date();
+  const year = now.getFullYear();
+
+  const parts = String(shortDate).split('/');
+
+  if (parts.length < 2) return '';
+
+  const month = String(parts[0]).padStart(2, '0');
+  const day = String(parts[1]).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function updateActiveButton(selector, value) {
+  document.querySelectorAll(selector).forEach(btn => {
+    btn.classList.remove('active');
+
+    if (btn.innerText.includes(value) || btn.innerText.includes(value.replace(':00', ''))) {
+      btn.classList.add('active');
+    }
+  });
+}  
 function getSelectedCharacter() {
   const value = document.getElementById('characterSelect').value;
   if (!value) return null;
@@ -305,8 +342,12 @@ function getSelectedCharacter() {
 
 function selectBoss(el,boss) {
   selectedBoss = boss;
+  selectedDates = [];
+
   document.querySelectorAll('.boss-card').forEach(btn => btn.classList.remove('active'));
   el.classList.add('active');
+
+  loadMyAttendance();
   updateStatus();
 }
 
