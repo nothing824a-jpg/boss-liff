@@ -45,6 +45,8 @@ textarea{min-height:130px;resize:vertical}
   </div>
 
   <div class="card">
+    <div class="section-title">📌 我的出席資料</div>
+    <div id="myAttendanceBox" class="status">讀取出席資料中...</div>
     <div class="section-title">🎮 出戰角色</div>
     <select id="characterSelect">
       <option value="">讀取角色中...</option>
@@ -139,6 +141,7 @@ async function main() {
 
     renderCalendar();
     await loadCharacters();
+    await loadMyAttendance();
     updateStatus();
 
   } catch (error) {
@@ -249,7 +252,45 @@ async function loadCharacters() {
     );
 
   }
+async function loadMyAttendance() {
+  const box = document.getElementById('myAttendanceBox');
 
+  try {
+    box.innerText = '讀取出席資料中...';
+
+    const data = await jsonp(
+      GAS_URL +
+      '?action=getMyAttendance' +
+      '&userId=' + encodeURIComponent(userId)
+    );
+
+    if (!data || !data.ok || !data.attendance || data.attendance.length === 0) {
+      box.innerText = '目前沒有出席資料';
+      return;
+    }
+
+    let text = '';
+
+    data.attendance.forEach((r, index) => {
+      text += `${index + 1}. ${r.boss}\n`;
+      text += `📅 ${r.date}（${r.week}）\n`;
+      text += `⏰ ${r.time} 後\n`;
+      text += `🔥 ${r.runs}場\n`;
+      text += `👤 ${r.character}\n`;
+
+      if (r.note) {
+        text += `📝 ${r.note}\n`;
+      }
+
+      text += `\n`;
+    });
+
+    box.innerText = text.trim();
+
+  } catch (error) {
+    box.innerText = '❌ 出席資料讀取失敗\n' + error.message;
+  }
+}
 }
 function getSelectedCharacter() {
   const value = document.getElementById('characterSelect').value;
